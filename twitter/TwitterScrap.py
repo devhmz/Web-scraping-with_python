@@ -6,7 +6,13 @@ import pandas as pd
 from time import time
 import csv as csv
 import re
+from textblob import TextBlob
+from textblob_fr import PatternTagger, PatternAnalyzer
+import matplotlib.pyplot as plt
+import numpy as np
+ 
 # Twitter 
+
 
 # Initialisation d'un tableau de données 
 tweet_data = []
@@ -28,10 +34,12 @@ for i, tweets in enumerate(twitterScraper.TwitterSearchScraper('{}'.format(hasht
 df = pd.DataFrame(tweet_data, columns=['Tweets'])
 df.to_csv("avis.csv", index=False, encoding='utf-8')
 
-regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+
+
+
+# Cleaning data 
 
 tab = []
-
 fp = open("avis.csv", "r", encoding="utf-8")
 for ligne in csv.reader(fp, delimiter=";"):
     for i in ligne : 
@@ -39,31 +47,48 @@ for ligne in csv.reader(fp, delimiter=";"):
          text =  re.sub(r'#',' ',text) #removes the hashtags
          text =  re.sub(r'RT[\s]+',' ',text) #removes the retweets
          text =  re.sub(r'https?://\S+',' ',text) #removes the hyper links
-         text = text.lower()
-         text = text.replace('\n', ' ').replace('\r', '')
-         text = ' '.join(text.split())
-         text = re.sub(r"[A-Za-z\.]*[0-9]+[A-Za-z%°\.]*", "", text)
-         text = re.sub(r"(\s\-\s|-$)", "", text)
-         text = re.sub(r"[,\!\?\%\(\)\/\"]", "", text)
-         text = re.sub(r"\&\S*\s", "", text)
-         text = re.sub(r"\&", "", text)
-         text = re.sub(r"\+", "", text)
-         text = re.sub(r"\#", "", text)
-         text = re.sub(r"\$", "", text)
-         text = re.sub(r"\£", "", text)
-         text = re.sub(r"\%", "", text)
-         text = re.sub(r"\:", "", text)
-         text = re.sub(r"\@", "", text)
-         text = re.sub(r"\-", "", text)
+         text = text.lower() # removes lower case
+         text = text.replace('\n', ' ').replace('\r', '') #removes sapces
+         text = ' '.join(text.split()) #split string
+         text = re.sub(r"[A-Za-z\.]*[0-9]+[A-Za-z%°\.]*", "", text) #removes the @mentions
+         text = re.sub(r"(\s\-\s|-$)", "", text) #removes the $mentions
+         text = re.sub(r"[,\!\?\%\(\)\/\"]", "", text)  #removes the \\\\mentions
+         text = re.sub(r"\&\S*\s", "", text) #removes the &*mentions
+         text = re.sub(r"\&", "", text)#removes the &mentions
+         text = re.sub(r"\+", "", text)#removes the +mentions
+         text = re.sub(r"\#", "", text)#removes the #mentions
+         text = re.sub(r"\$", "", text)#removes the $mentions
+         text = re.sub(r"\£", "", text)#removes the £mentions
+         text = re.sub(r"\%", "", text)#removes the %mentions
+         text = re.sub(r"\:", "", text)#removes the :mentions
+         text = re.sub(r"\@", "", text)#removes the @mentions
+         text = re.sub(r"\-", "", text)#removes the -mentions
          tab.append([text])
         
 df = pd.DataFrame(tab, columns=['Tweets'])
 df.to_csv("avis_nettoyes1.csv", index=False, encoding='utf-8')
-      
-        
+
+#Sentiment analysis
+tweets = pd.read_csv("avis_nettoyes1.csv")
+corpus = df['Tweets']
+
+polarity = []
+
+for tweet in corpus:
+  polarity.append(TextBlob(tweet,pos_tagger=PatternTagger(),analyzer=PatternAnalyzer()).sentiment[0])      
+
+print(polarity)
+
+# Visualisation of result
+
+plt.plot(polarity)
 
 
-    
+# If you want to use regex , here is an exepmle 
+#regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+
+
+    # rechercher les liens dans les commanatiares 
     # for cellule in ligne:
     #url = re.search("https", ligne)
     # url = re.findall(regex, ligne)
@@ -73,3 +98,12 @@ df.to_csv("avis_nettoyes1.csv", index=False, encoding='utf-8')
     # else :
     #     print("error")  
         
+group = lambda liste, size : [liste[i:i+size] for i in range(0, len(liste), size)]
+
+polarity_par_paquet = group(polarity,100)
+
+liste_moyennes = []
+for l in polarity_par_paquet :
+  liste_moyennes.append(np.mean(l))
+
+plt.plot(liste_moyennes)
