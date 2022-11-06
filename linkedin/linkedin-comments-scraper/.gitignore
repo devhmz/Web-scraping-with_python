@@ -1,0 +1,11 @@
+__pycache__/
+
+*.csv
+
+*.zip
+
+credentials.json
+
+profile-pics*/
+
+venv/
